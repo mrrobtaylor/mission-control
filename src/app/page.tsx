@@ -21,6 +21,7 @@ interface Task {
   priority: 'high' | 'medium' | 'low';
   projectId: string;
   updatedAt: string;
+  output?: string;
 }
 
 interface BlogPost {
@@ -40,11 +41,11 @@ const AGENTS: Agent[] = [
 ];
 
 const TASKS: Task[] = [
-  { id: 'betty-ideas', title: 'Research 10 blog post ideas', description: 'Explore topics for the Bedrock blog', status: 'done', assignee: 'betty', priority: 'high', projectId: 'bedrock-blog', updatedAt: '2026-06-08T00:03:00Z' },
+  { id: 'betty-ideas', title: 'Research 10 blog post ideas', description: 'Explore topics for the Bedrock blog', status: 'done', assignee: 'betty', priority: 'high', projectId: 'bedrock-blog', updatedAt: '2026-06-08T00:03:00Z', output: 'Researched and compiled 10 blog post ideas:\n\n1. Why My Studio Is Called Bedrock — origin story, solid foundations, keeping things human\n2. The Night My Agent Killed the Gateway — postmortem on the 2026-06-07 outage\n3. The 10-Minute Rule — why every task gets a 10-min time limit\n4. How to Brief an AI Like You Brief a Junior Dev — context, examples, acceptance criteria\n5. Boring Infrastructure Is the Best Infrastructure — reliability over novelty\n6. What Running a One-Person Studio in 2026 Looks Like — real rhythms of shipping\n7. Three Things I Built This Month That Nobody Asked For — side projects and experiments\n8. Teaching an AI to Be Dry — voice, tone, British humour for bots\n9. Telegram, Heartbeats, and Why I Talk to My Agent More Than My Team — daily AI collaboration\n10. A Small Studio\'s Reading List (June 2026) — tools, posts, repos, people' },
   { id: 'wilma-post-1', title: 'Write blog post 1', description: 'Based on Betty\'s ideas', status: 'in_progress', assignee: 'wilma', priority: 'high', projectId: 'bedrock-blog', updatedAt: '2026-06-08T00:03:00Z' },
   { id: 'wilma-post-2', title: 'Write blog post 2', description: 'Based on Betty\'s ideas', status: 'backlog', assignee: 'wilma', priority: 'high', projectId: 'bedrock-blog', updatedAt: '2026-06-08T00:03:00Z' },
   { id: 'wilma-post-3', title: 'Write blog post 3', description: 'Based on Betty\'s ideas', status: 'backlog', assignee: 'wilma', priority: 'high', projectId: 'bedrock-blog', updatedAt: '2026-06-08T00:03:00Z' },
-  { id: 'fred-blog-templates', title: 'Build blog page templates', description: 'Create HTML/CSS blog templates', status: 'done', assignee: 'fred', priority: 'high', projectId: 'bedrock-blog', updatedAt: '2026-06-08T00:03:00Z' },
+  { id: 'fred-blog-templates', title: 'Build blog page templates', description: 'Create HTML/CSS blog templates', status: 'done', assignee: 'fred', priority: 'high', projectId: 'bedrock-blog', updatedAt: '2026-06-08T00:03:00Z', output: 'Built responsive HTML/CSS blog templates:\n\n- Home page with hero section and post grid\n- Individual post page with reading time, author bio\n- About page with studio story\n- Minimal, dark theme matching the Bedrock brand\n- Mobile-first responsive design\n- No external dependencies — pure HTML/CSS' },
   { id: 'wilma-post-4', title: 'Write blog post 4', description: 'Based on Betty\'s ideas', status: 'backlog', assignee: 'wilma', priority: 'high', projectId: 'bedrock-blog', updatedAt: '2026-06-08T00:03:00Z' },
   { id: 'wilma-post-5', title: 'Write blog post 5', description: 'Based on Betty\'s ideas', status: 'backlog', assignee: 'wilma', priority: 'high', projectId: 'bedrock-blog', updatedAt: '2026-06-08T00:03:00Z' },
   { id: 'wilma-post-6', title: 'Write blog post 6', description: 'Based on Betty\'s ideas', status: 'backlog', assignee: 'wilma', priority: 'high', projectId: 'bedrock-blog', updatedAt: '2026-06-08T00:03:00Z' },
@@ -88,7 +89,7 @@ function AgentCard({ agent }: { agent: Agent }) {
   );
 }
 
-function TaskRow({ task }: { task: Task }) {
+function TaskRow({ task, isExpanded, onToggle }: { task: Task; isExpanded: boolean; onToggle: () => void }) {
   const agent = AGENTS.find(a => a.id === task.assignee);
   const statusColors: Record<string, string> = {
     in_progress: 'bg-cyan-500/20 text-cyan-400',
@@ -96,24 +97,42 @@ function TaskRow({ task }: { task: Task }) {
     done: 'bg-green-500/20 text-green-400',
     blocked: 'bg-red-500/20 text-red-400',
   };
-  
+  const hasOutput = !!task.output;
+
   return (
-    <div className="flex items-center gap-4 py-3 border-b border-slate-800 last:border-0">
-      <span className="text-lg">{agent?.emoji || '❓'}</span>
-      <div className="flex-1">
-        <p className="text-sm font-medium text-slate-200">{task.title}</p>
-        <p className="text-xs text-slate-500">{task.description}</p>
-      </div>
-      <span className={`text-xs px-2 py-1 rounded-full ${statusColors[task.status]}`}>
-        {task.status.replace('_', ' ')}
-      </span>
-      <span className={`text-xs px-2 py-1 rounded-full ${
-        task.priority === 'high' ? 'bg-amber-500/20 text-amber-400' :
-        task.priority === 'medium' ? 'bg-blue-500/20 text-blue-400' :
-        'bg-slate-500/20 text-slate-400'
-      }`}>
-        {task.priority}
-      </span>
+    <div className="border-b border-slate-800 last:border-0">
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`w-full flex items-center gap-4 py-3 text-left ${hasOutput ? 'cursor-pointer hover:bg-slate-800/40 transition-colors rounded' : 'cursor-default'}`}
+      >
+        <span className="text-lg">{agent?.emoji || '❓'}</span>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-slate-200">{task.title}</p>
+          <p className="text-xs text-slate-500">{task.description}</p>
+        </div>
+        {hasOutput && (
+          <span className="text-slate-500 text-xs border border-slate-700 rounded px-1.5 py-0.5">
+            {isExpanded ? '▲' : '▶'}
+          </span>
+        )}
+        <span className={`text-xs px-2 py-1 rounded-full ${statusColors[task.status]}`}>
+          {task.status.replace('_', ' ')}
+        </span>
+        <span className={`text-xs px-2 py-1 rounded-full ${
+          task.priority === 'high' ? 'bg-amber-500/20 text-amber-400' :
+          task.priority === 'medium' ? 'bg-blue-500/20 text-blue-400' :
+          'bg-slate-500/20 text-slate-400'
+        }`}>
+          {task.priority}
+        </span>
+      </button>
+      {isExpanded && task.output && (
+        <div className="ml-10 mr-4 mb-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Output</p>
+          <pre className="text-xs text-slate-300 whitespace-pre-wrap font-mono">{task.output}</pre>
+        </div>
+      )}
     </div>
   );
 }
@@ -140,13 +159,18 @@ function BlogPostCard({ post }: { post: BlogPost }) {
 
 export default function MissionControl() {
   const [time, setTime] = useState('');
-  
+  const [expandedTask, setExpandedTask] = useState<string | null>(null);
+
   useEffect(() => {
     const update = () => setTime(new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' }));
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const toggleTask = (id: string) => {
+    setExpandedTask(prev => (prev === id ? null : id));
+  };
 
   return (
     <div className="min-h-screen p-6">
@@ -178,7 +202,12 @@ export default function MissionControl() {
             <h2 className="text-lg font-semibold text-slate-300 mb-4">Tasks — Bedrock Blog</h2>
             <div className="card">
               {TASKS.map(task => (
-                <TaskRow key={task.id} task={task} />
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  isExpanded={expandedTask === task.id}
+                  onToggle={() => toggleTask(task.id)}
+                />
               ))}
             </div>
           </section>
